@@ -1,5 +1,7 @@
 const audioAlpha = new (AudioContext || webkitURL.AudioContext())();
 
+// Connecting the file upload to the ID from the HTML file.
+const fileUpload = document.getElementById("fileToUpload");
 // creating buffer node
 const bufferNode = audioAlpha.createBufferSource();
 bufferNode.connect(audioAlpha.destination);
@@ -30,4 +32,4 @@ const calcLUFS = function (loudnessArray, sampleRate) {
   return intergratedLUFS;
 };
 
-// I don't really fully understand this math
+// I don't really fully understand this math, but it seemed right.
