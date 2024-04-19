@@ -60,7 +60,7 @@ document.getElementById("Upload File").addEventListener("click", (event) => {
  * @returns {Number} intergrated RMS Value
  */
 const calcRMS = function (testBuffer) {
-  let loudnessArray = testBuffer.getChannelData(0);
+  let loudnessArray = testBuffer.buffer.getChannelData(0);
   let sumSquared = 0;
   for (let i = 0; i < loudnessArray.length; i++) {
     sumSquared += loudnessArray[i] * loudnessArray[i];
@@ -111,14 +111,15 @@ const calcLUFS = function () {
 
   offlineContext.startRendering().then((renderedBuffer) => {
     console.log("rendering completed succesfully.");
-    console.log(calcRMS(renderedBuffer));
+    const destinationBuffer = audioAlpha.createBufferSource();
+    destinationBuffer.buffer = renderedBuffer;
+
+    console.log(calcRMS(destinationBuffer));
     console.log(calcRMS(fileBuffer));
   });
 };
 // I don't really fully understand this math, but it seemed right.
 document.getElementById("Calculate RMS").addEventListener("click", function () {
-  document.getElementById("RMS Result").innerText = `${calcRMS(
-    fileBuffer.buffer
-  )}`;
+  document.getElementById("RMS Result").innerText = `${calcRMS(fileBuffer)}`;
   calcLUFS();
 });
