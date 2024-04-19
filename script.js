@@ -5,7 +5,7 @@ const bufferNode = audioAlpha.createBufferSource();
 bufferNode.connect(audioAlpha.destination);
 
 // Just a placeholder, will work out a way to update the sample rate based on the sample rate of the file.
-let sampleRate = 44100;
+// let sampleRate = 44100;
 
 // File Buffer
 let fileBuffer = null;
@@ -74,7 +74,22 @@ const calcRMS = function (testBuffer) {
   return intergratedRMS;
 };
 
-const calcLUFS = function () {
+// WIP: https://chat.openai.com/c/6b138a47-a2f1-4809-abab-6d78c830a4e4
+const calcIntLUFS = function (testBuffer) {
+  let loudnessArray = testBuffer.buffer.getChannelData(0);
+  let intergratedLUFS = 0;
+  for (let i = 0; i < loudnessArray.length; i++) {
+    intergratedLUFS += momentary[i] * intervals[i];
+  }
+  const totalDuration = intervals.reduce((acc, val) => acc + val, 0);
+  integratedLUFS /= totalDuration;
+  return intergratedLUFS;
+};
+
+/**
+ * function to make the appropriate K weighted Filters to calculate the LUFS numbers
+ */
+const makeKWeight = function () {
   const LUFSBuffer = fileBuffer.buffer;
   const sampleRate = LUFSBuffer.sampleRate;
   const length = LUFSBuffer.length;
@@ -121,5 +136,5 @@ const calcLUFS = function () {
 // I don't really fully understand this math, but it seemed right.
 document.getElementById("Calculate RMS").addEventListener("click", function () {
   document.getElementById("RMS Result").innerText = `${calcRMS(fileBuffer)}`;
-  calcLUFS();
+  makeKWeight();
 });
