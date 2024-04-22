@@ -1,0 +1,3 @@
+Worked a bit more on the front end user interface, trying to figure out the math on LUFS still. I'm close, just need to mess with it a little more. 
+
+Trying to work on passing through the offline buffer to the LUFS function like we wound up doing to test the K-weighted filter on the RMS DB calc function that was already in the file. 
