@@ -74,16 +74,52 @@ const calcRMS = function (testBuffer) {
   return intergratedRMS;
 };
 
-// WIP: https://chat.openai.com/c/6b138a47-a2f1-4809-abab-6d78c830a4e4
-const calcIntLUFS = function (testBuffer) {
-  let loudnessArray = testBuffer.buffer.getChannelData(0);
-  let intergratedLUFS = 0;
-  for (let i = 0; i < loudnessArray.length; i++) {
-    intergratedLUFS += momentary[i] * intervals[i];
+/**
+ *
+ * @param {AudioBuffer} testBuffer2 is a placeholder for the audio buffer you pass through the calc LUFS
+ * @param {Number} segmentDuration probably 1, that's generally a good balance between accuracy and computational efficency.
+ */
+const extractLoudnessData = function (testBuffer2, segmentDuration) {
+  // variable initalization
+  const momentary = [];
+  const intervals = [];
+  const numChannels = testBuffer2.numberOfChannels;
+  const sampleRate = testBuffer2.sampleRate;
+  const numSamples = testBuffer2.length;
+
+  // calcs
+  const samplesPerSegment = sampleRate * segmentDuration;
+  const numSegments = math.ceil(numSamples / samplesPerSegment);
+
+  for (let i = 0; i < numSegments; i++) {
+    const startSample = i * samplesPerSegment;
+    const endSample = Math.min((i + 1) * samplesPerSegment, numSamples);
+
+    const segmentData = [];
+    for (let channel = 0; channel < numChannels; channel++) {
+      const channelData = testBuffer2.getChannelData(channel);
+      segmentData.push(channelData.slice(startSample, endSample));
+    }
+    const loudness = calculateSegmentLoudness(segmentData, sampleRate);
+    momentary.push(loudness);
+    intervals.push(segmentDuration);
   }
+  return { momentary, intervals };
+};
+
+// WIP: https://chat.openai.com/c/6b138a47-a2f1-4809-abab-6d78c830a4e4
+const calcIntLUFS = function (momentary, intervals) {
+  // Calculate integrated loudness
+  let integratedLoudness = 0;
+  for (let i = 0; i < momentary.length; i++) {
+    integratedLoudness += momentary[i] * intervals[i];
+  }
+
+  // Normalize by total duration
   const totalDuration = intervals.reduce((acc, val) => acc + val, 0);
-  integratedLUFS /= totalDuration;
-  return intergratedLUFS;
+  integratedLoudness /= totalDuration;
+
+  return integratedLoudness;
 };
 
 /**
@@ -128,13 +164,20 @@ const makeKWeight = function () {
     console.log("rendering completed succesfully.");
     const destinationBuffer = audioAlpha.createBufferSource();
     destinationBuffer.buffer = renderedBuffer;
-
-    console.log(calcRMS(destinationBuffer));
-    console.log(calcRMS(fileBuffer));
   });
 };
-// I don't really fully understand this math, but it seemed right.
+// Event Listener for RMS and LUFS
 document.getElementById("Calculate RMS").addEventListener("click", function () {
   document.getElementById("RMS Result").innerText = `${calcRMS(fileBuffer)}`;
-  makeKWeight();
 });
+document
+  .getElementById("Calculate LUFS")
+  .addEventListener("click", function () {
+    makeKWeight();
+    const { momentary, intervals } = extractLoudnessData(destinationBuffer, 1);
+
+    document.getElementById("LUFS Result").innerText = `${calcIntLUFS({
+      momentary,
+      intervals,
+    })}`;
+  });

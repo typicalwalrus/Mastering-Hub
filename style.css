@@ -34,3 +34,7 @@ h3 {
   color: black;
   text-size-adjust: larger;
 }
+.button {
+  font-size: 18px;
+  padding: 12px 24px;
+}
