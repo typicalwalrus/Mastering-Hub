@@ -10,6 +10,8 @@ bufferNode.connect(audioAlpha.destination);
 // File Buffer
 let fileBuffer = null;
 
+let destinationBuffer = null;
+
 // Function to load file into audio buffer
 const loadFileIntoBuffer = function () {
   const fileUpload = document.getElementById("fileToUpload");
@@ -73,7 +75,21 @@ const calcRMS = function (testBuffer) {
   const intergratedRMS = loudnessDB + 0;
   return intergratedRMS;
 };
-
+const calculateSegmentLoudness = function (segmentData, numSamples) {
+  // Calculate the average loudness of the segment data
+  let sumSquared = 0;
+  // let numSamples = segmentData[0].length; // Assuming all channels have the same number of samples
+  for (let i = 0; i < numSamples; i++) {
+    let sumChannelsSquared = 0;
+    for (let channel = 0; channel < segmentData.length; channel++) {
+      sumChannelsSquared += segmentData[channel][i] * segmentData[channel][i];
+    }
+    sumSquared += sumChannelsSquared / segmentData.length;
+  }
+  const rms = Math.sqrt(sumSquared / numSamples);
+  const loudnessDB = 20 * Math.log10(rms);
+  return loudnessDB;
+};
 /**
  *
  * @param {AudioBuffer} testBuffer2 is a placeholder for the audio buffer you pass through the calc LUFS
@@ -83,31 +99,36 @@ const extractLoudnessData = function (testBuffer2, segmentDuration) {
   // variable initalization
   const momentary = [];
   const intervals = [];
-  const numChannels = testBuffer2.numberOfChannels;
-  const sampleRate = testBuffer2.sampleRate;
-  const numSamples = testBuffer2.length;
+  const numChannels = testBuffer2.buffer.numberOfChannels;
+  const sampleRate = testBuffer2.buffer.sampleRate;
+  const numSamples = testBuffer2.buffer.length;
+  console.log(testBuffer2);
+  // console.log(segmentDuration);
 
   // calcs
   const samplesPerSegment = sampleRate * segmentDuration;
   const numSegments = Math.ceil(numSamples / samplesPerSegment);
-
+  // console.log(numSamples);
+  // console.log(numSegments);
   for (let i = 0; i < numSegments; i++) {
     const startSample = i * samplesPerSegment;
     const endSample = Math.min((i + 1) * samplesPerSegment, numSamples);
 
     const segmentData = [];
     for (let channel = 0; channel < numChannels; channel++) {
-      const channelData = testBuffer2.getChannelData(channel);
+      const channelData = testBuffer2.buffer.getChannelData(channel);
       segmentData.push(channelData.slice(startSample, endSample));
     }
+    console.log(segmentData);
+
     const loudness = calculateSegmentLoudness(segmentData, sampleRate);
+    console.log(loudness);
     momentary.push(loudness);
     intervals.push(segmentDuration);
   }
   return { momentary, intervals };
 };
 
-// WIP: https://chat.openai.com/c/6b138a47-a2f1-4809-abab-6d78c830a4e4
 const calcIntLUFS = function (momentary, intervals) {
   // Calculate integrated loudness
   let integratedLoudness = 0;
@@ -162,7 +183,7 @@ const makeKWeight = function () {
 
   offlineContext.startRendering().then((renderedBuffer) => {
     console.log("rendering completed succesfully.");
-    const destinationBuffer = audioAlpha.createBufferSource();
+    destinationBuffer = audioAlpha.createBufferSource();
     destinationBuffer.buffer = renderedBuffer;
   });
 };
@@ -170,14 +191,18 @@ const makeKWeight = function () {
 document.getElementById("Calculate RMS").addEventListener("click", function () {
   document.getElementById("RMS Result").innerText = `${calcRMS(fileBuffer)}`;
 });
+document.getElementById("LUFS Timing").addEventListener("click", function () {
+  makeKWeight();
+});
 document
   .getElementById("Calculate LUFS")
   .addEventListener("click", function () {
-    makeKWeight();
+    // makeKWeight();
     const { momentary, intervals } = extractLoudnessData(destinationBuffer, 1);
-
-    document.getElementById("LUFS Result").innerText = `${calcIntLUFS({
+    // console.log(momentary);
+    // console.log(intervals);
+    document.getElementById("LUFS Result").innerText = `${calcIntLUFS(
       momentary,
-      intervals,
-    })}`;
+      intervals
+    )}`;
   });
