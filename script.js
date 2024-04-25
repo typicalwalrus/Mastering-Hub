@@ -89,7 +89,7 @@ const extractLoudnessData = function (testBuffer2, segmentDuration) {
 
   // calcs
   const samplesPerSegment = sampleRate * segmentDuration;
-  const numSegments = math.ceil(numSamples / samplesPerSegment);
+  const numSegments = Math.ceil(numSamples / samplesPerSegment);
 
   for (let i = 0; i < numSegments; i++) {
     const startSample = i * samplesPerSegment;
