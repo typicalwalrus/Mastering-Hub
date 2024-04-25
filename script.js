@@ -72,7 +72,8 @@ const calcRMS = function (testBuffer) {
   const loudnessDB = 20 * Math.log10(rms);
 
   // Normalization
-  const intergratedRMS = loudnessDB + 0;
+  let intergratedRMS = loudnessDB + 0;
+  intergratedRMS = Math.floor(intergratedRMS * 100) / 100;
   return intergratedRMS;
 };
 const calculateSegmentLoudness = function (segmentData, numSamples) {
@@ -102,14 +103,11 @@ const extractLoudnessData = function (testBuffer2, segmentDuration) {
   const numChannels = testBuffer2.buffer.numberOfChannels;
   const sampleRate = testBuffer2.buffer.sampleRate;
   const numSamples = testBuffer2.buffer.length;
-  console.log(testBuffer2);
-  // console.log(segmentDuration);
 
   // calcs
   const samplesPerSegment = sampleRate * segmentDuration;
   const numSegments = Math.ceil(numSamples / samplesPerSegment);
-  // console.log(numSamples);
-  // console.log(numSegments);
+
   for (let i = 0; i < numSegments; i++) {
     const startSample = i * samplesPerSegment;
     const endSample = Math.min((i + 1) * samplesPerSegment, numSamples);
@@ -119,10 +117,9 @@ const extractLoudnessData = function (testBuffer2, segmentDuration) {
       const channelData = testBuffer2.buffer.getChannelData(channel);
       segmentData.push(channelData.slice(startSample, endSample));
     }
-    console.log(segmentData);
 
     const loudness = calculateSegmentLoudness(segmentData, sampleRate);
-    console.log(loudness);
+
     momentary.push(loudness);
     intervals.push(segmentDuration);
   }
@@ -139,7 +136,7 @@ const calcIntLUFS = function (momentary, intervals) {
   // Normalize by total duration
   const totalDuration = intervals.reduce((acc, val) => acc + val, 0);
   integratedLoudness /= totalDuration;
-
+  integratedLoudness = Math.round(integratedLoudness * 100) / 100;
   return integratedLoudness;
 };
 
@@ -189,7 +186,9 @@ const makeKWeight = function () {
 };
 // Event Listener for RMS and LUFS
 document.getElementById("Calculate RMS").addEventListener("click", function () {
-  document.getElementById("RMS Result").innerText = `${calcRMS(fileBuffer)}`;
+  document.getElementById("RMS Result").innerText = `${calcRMS(
+    fileBuffer
+  )} DBFS`;
 });
 document.getElementById("LUFS Timing").addEventListener("click", function () {
   makeKWeight();
@@ -199,10 +198,8 @@ document
   .addEventListener("click", function () {
     // makeKWeight();
     const { momentary, intervals } = extractLoudnessData(destinationBuffer, 1);
-    // console.log(momentary);
-    // console.log(intervals);
     document.getElementById("LUFS Result").innerText = `${calcIntLUFS(
       momentary,
       intervals
-    )}`;
+    )} LUFS`;
   });
