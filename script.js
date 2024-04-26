@@ -73,13 +73,29 @@ const calcRMS = function (testBuffer) {
 
   // Normalization
   let intergratedRMS = loudnessDB + 0;
-  intergratedRMS = Math.floor(intergratedRMS * 100) / 100;
+  intergratedRMS = Math.round(intergratedRMS * 100) / 100;
   return intergratedRMS;
 };
-const calculateSegmentLoudness = function (segmentData, numSamples) {
+// const calculateSegmentLoudness = function (segmentData, numSamples) {
+//   // Calculate the average loudness of the segment data
+//   let sumSquared = 0;
+//   // let numSamples = segmentData[0].length; // Assuming all channels have the same number of samples
+//   for (let i = 0; i < numSamples; i++) {
+//     let sumChannelsSquared = 0;
+//     for (let channel = 0; channel < segmentData.length; channel++) {
+//       sumChannelsSquared += segmentData[channel][i] * segmentData[channel][i];
+//     }
+//     sumSquared += sumChannelsSquared / segmentData.length;
+//   }
+//   const rms = Math.sqrt(sumSquared / numSamples);
+//   const loudnessDB = 20 * Math.log10(rms);
+//   return loudnessDB;
+// };
+// Updated Segment Loudness
+const calculateSegmentLoudness = function (segmentData, sampleRate) {
   // Calculate the average loudness of the segment data
   let sumSquared = 0;
-  // let numSamples = segmentData[0].length; // Assuming all channels have the same number of samples
+  let numSamples = segmentData[0].length; // Assuming all channels have the same number of samples
   for (let i = 0; i < numSamples; i++) {
     let sumChannelsSquared = 0;
     for (let channel = 0; channel < segmentData.length; channel++) {
@@ -88,8 +104,9 @@ const calculateSegmentLoudness = function (segmentData, numSamples) {
     sumSquared += sumChannelsSquared / segmentData.length;
   }
   const rms = Math.sqrt(sumSquared / numSamples);
-  const loudnessDB = 20 * Math.log10(rms);
-  return loudnessDB;
+  const loudnessRMS = 20 * Math.log10(rms);
+  const intervalDuration = numSamples / sampleRate;
+  return { loudnessRMS, intervalDuration };
 };
 /**
  *
@@ -98,6 +115,7 @@ const calculateSegmentLoudness = function (segmentData, numSamples) {
  */
 const extractLoudnessData = function (testBuffer2, segmentDuration) {
   // variable initalization
+  // console.log(`extractLoudnessData input`, testBuffer2, segmentDuration);
   const momentary = [];
   const intervals = [];
   const numChannels = testBuffer2.buffer.numberOfChannels;
@@ -117,26 +135,37 @@ const extractLoudnessData = function (testBuffer2, segmentDuration) {
       const channelData = testBuffer2.buffer.getChannelData(channel);
       segmentData.push(channelData.slice(startSample, endSample));
     }
+    // console.log(segmentData);
+    const { loudnessRMS, intervalDuration } = calculateSegmentLoudness(
+      segmentData,
+      sampleRate
+    );
 
-    const loudness = calculateSegmentLoudness(segmentData, sampleRate);
-
-    momentary.push(loudness);
-    intervals.push(segmentDuration);
+    momentary.push(loudnessRMS);
+    intervals.push(intervalDuration);
   }
+  // console.log(`extractLoudnessData output`, momentary, intervals);
   return { momentary, intervals };
 };
 
 const calcIntLUFS = function (momentary, intervals) {
   // Calculate integrated loudness
+  // console.log(`calcIntLUFS Input`, momentary, intervals);
   let integratedLoudness = 0;
+  // console.log(`momentary.length`, momentary.length);
   for (let i = 0; i < momentary.length; i++) {
     integratedLoudness += momentary[i] * intervals[i];
-  }
 
+    console.log(`arrays`, momentary[i], intervals[i]);
+  }
+  console.log(`calcIntLUFS step 1`, integratedLoudness);
   // Normalize by total duration
   const totalDuration = intervals.reduce((acc, val) => acc + val, 0);
+  // console.log(`calcIntLUFS Step 2 `, totalDuration);
   integratedLoudness /= totalDuration;
+  // console.log(`calcIntLUFS Step 3`, integratedLoudness);
   integratedLoudness = Math.round(integratedLoudness * 100) / 100;
+  // console.log(`calcIntLUFS Step 4`, integratedLoudness);
   return integratedLoudness;
 };
 
@@ -197,7 +226,10 @@ document
   .getElementById("Calculate LUFS")
   .addEventListener("click", function () {
     // makeKWeight();
-    const { momentary, intervals } = extractLoudnessData(destinationBuffer, 1);
+    const { momentary, intervals } = extractLoudnessData(
+      destinationBuffer,
+      0.1
+    );
     document.getElementById("LUFS Result").innerText = `${calcIntLUFS(
       momentary,
       intervals
