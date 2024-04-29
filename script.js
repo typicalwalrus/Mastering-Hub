@@ -140,10 +140,13 @@ const extractLoudnessData = function (testBuffer2, segmentDuration) {
       segmentData,
       sampleRate
     );
-
-    momentary.push(loudnessRMS);
-    intervals.push(intervalDuration);
+    if (loudnessRMS > -70) {
+      momentary.push(loudnessRMS);
+      intervals.push(intervalDuration);
+    }
   }
+  // This is where calculate momentary average would theoretically happen.
+
   // console.log(`extractLoudnessData output`, momentary, intervals);
   return { momentary, intervals };
 };
@@ -190,19 +193,24 @@ const makeKWeight = function () {
   // Create a high-pass filter
   const highPassFilter = offlineContext.createBiquadFilter();
   highPassFilter.type = "highpass";
-  highPassFilter.frequency.value = 38; // Cutoff frequency at 38 Hz
+  highPassFilter.frequency.value = 80; // Cutoff frequency at 80 Hz
   highPassFilter.Q.value = 0.707; // Quality factor
 
   // Create a high-shelf filter
   const highShelfFilter = offlineContext.createBiquadFilter();
   highShelfFilter.type = "highshelf";
-  highShelfFilter.frequency.value = 1500; // Frequency above which to boost/cut
-  highShelfFilter.gain.value = 4; // Gain for the frequencies above 1500 Hz
+  highShelfFilter.frequency.value = 2000; // Frequency above which to boost/cut
+  highShelfFilter.gain.value = 1.585; // + 4 dB boost shelving above 2kHz
 
   // Connecting the Nodes
-  filterBuffer.connect(highPassFilter);
-  highPassFilter.connect(highShelfFilter);
-  highShelfFilter.connect(offlineContext.destination);
+  // filterBuffer.connect(highPassFilter);
+  // highPassFilter.connect(highShelfFilter);
+  // highShelfFilter.connect(offlineContext.destination);
+
+  // Node.v2
+  filterBuffer.connect(highShelfFilter);
+  highShelfFilter.connect(highPassFilter);
+  highPassFilter.connect(offlineContext.destination);
 
   // Rendering
   filterBuffer.start(0);
@@ -228,7 +236,7 @@ document
     // makeKWeight();
     const { momentary, intervals } = extractLoudnessData(
       destinationBuffer,
-      0.1
+      0.4
     );
     document.getElementById("LUFS Result").innerText = `${calcIntLUFS(
       momentary,
