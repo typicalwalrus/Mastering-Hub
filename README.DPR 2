@@ -1,3 +1,1 @@
-Worked a bit more on the front end user interface, trying to figure out the math on LUFS still. I'm close, just need to mess with it a little more. 
-
-Trying to work on passing through the offline buffer to the LUFS function like we wound up doing to test the K-weighted filter on the RMS DB calc function that was already in the file. 
+This is basically in the same shape it was after our meeting on friday. In all transparency I haven't really gotten to work on it since then, save a few more test runs to try and dial in the LUFS filter a tiny bit more. Going to reimplement the DB Peak loudness function and clean it up a bit, then we'll be good to go!
