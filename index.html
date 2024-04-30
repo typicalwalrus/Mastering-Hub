@@ -24,13 +24,21 @@
   <p id = "RMS Result"></p>
   <button type = "button" id="Calculate RMS">Click for RMS DBFS</button>
   <p id = "Peak Result"></p>
-  <button type = "button" id = "Calculate Peak RMS">Click for Peak DBFS</button>
+  <button type = "button" id = "Calculate Peak DB">Click for Peak DBFS</button>
   <h3>
     LUFS (Intergrated)
   </h3>
   <button type = "button" id = "LUFS Timing">Click here to Render</button>
   <p id = "LUFS Result"></p>
+  <div class = "resultButton">
   <button type = "button" id = "Calculate LUFS">Click for Result</button>
-
+</div>
+<div class="clearfix"></div>
+</div>
+  <div class="leftThird">
+  <h4>
+    LUFS or Loudness Units (relative to) Full Scale is a weighted-system for measuring digital loudness while taking into account the psychoacoustics of the listener. The audio is first passed through a High-Shelf filter (boosting around 2kHz) as our ears are sensitive to those frequencies, and introduces a High-Pass filter around 30Hz, as human ears don't find much sonic information at 30 cycles and below particularly powerful. The signal is usually then ran through 2 noise-gates. The first gating out any noise below -70dbFS, as it would be inperceptible to us but still influence the metrics as the sampling durations are so small. The second is a gate with a decided threshold at 10 dB lower than the intergrated loudness of the source. The above calculator, while functional, omits this step and may have the gain, Q and freqencies of these filters slightly altered from other popular metering applications, however for short content it should still be relatively accurate. This "K-Weighted" audio is then run through a calculation to provide an intergrated loudness measurement relative to full scale. This is particularly useful because DBFS is an objective measurement, so you can gauge how much more or less loud your mix/master "feels" to the listener, regardless of the DBFS metric's return. 
+  </h4>
+</div>
 </body>
 </html>

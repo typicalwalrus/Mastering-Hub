@@ -9,7 +9,7 @@ bufferNode.connect(audioAlpha.destination);
 
 // File Buffer
 let fileBuffer = null;
-
+// Buffer running through the offline context
 let destinationBuffer = null;
 
 // Function to load file into audio buffer
@@ -54,6 +54,35 @@ document.getElementById("Upload File").addEventListener("click", (event) => {
   // This will prompt the user to select a file, and then load that file into an AudioBuffer for playback.
   loadFileIntoBuffer();
 });
+/**
+ * Calculates the peak amplitude of an audio buffer.
+ *
+ * @param {AudioBufferSourceNode} audioBuffer - An audio buffer.
+ * @returns {number} The peak amplitude of the audio buffer.
+ */
+const peakAmp = function (testBuffer) {
+  // Define a variable to hold the peak amplitude.
+  let peak = 0;
+
+  // Loop over each available channel (0 for left and 1 for right in a stereo signal)
+  for (let c = 0; c < testBuffer.buffer.numberOfChannels; c++) {
+    // Get the data for the current channel
+    let channelData = testBuffer.buffer.getChannelData(c);
+
+    // For each sample in the channel data
+    channelData.forEach(function (sample) {
+      // Get the absolute value of the sample, since we're interested in peak amplitude, not peak deviation in either direction
+      let posSamp = Math.abs(sample);
+
+      // If the absolute value of the sample is greater than our current peak, replace it
+      if (posSamp > peak) {
+        peak = posSamp;
+      }
+    });
+  }
+  peak = Math.round(peak * 100) / 100;
+  return peak;
+};
 
 /**
  * function to calculate intergrated RMS
@@ -76,22 +105,13 @@ const calcRMS = function (testBuffer) {
   intergratedRMS = Math.round(intergratedRMS * 100) / 100;
   return intergratedRMS;
 };
-// const calculateSegmentLoudness = function (segmentData, numSamples) {
-//   // Calculate the average loudness of the segment data
-//   let sumSquared = 0;
-//   // let numSamples = segmentData[0].length; // Assuming all channels have the same number of samples
-//   for (let i = 0; i < numSamples; i++) {
-//     let sumChannelsSquared = 0;
-//     for (let channel = 0; channel < segmentData.length; channel++) {
-//       sumChannelsSquared += segmentData[channel][i] * segmentData[channel][i];
-//     }
-//     sumSquared += sumChannelsSquared / segmentData.length;
-//   }
-//   const rms = Math.sqrt(sumSquared / numSamples);
-//   const loudnessDB = 20 * Math.log10(rms);
-//   return loudnessDB;
-// };
-// Updated Segment Loudness
+
+/**
+ * This is a broken out function that is called and run inside extractLoudnessData which is doing the bulk of the computational workload.
+ * @param {Array} segmentData Data calculated in extractLoudnessData()
+ * @param {Number} sampleRate The sample rate
+ * @returns {{Intergrated Loudness and the Interval Duration}}
+ */
 const calculateSegmentLoudness = function (segmentData, sampleRate) {
   // Calculate the average loudness of the segment data
   let sumSquared = 0;
@@ -115,7 +135,6 @@ const calculateSegmentLoudness = function (segmentData, sampleRate) {
  */
 const extractLoudnessData = function (testBuffer2, segmentDuration) {
   // variable initalization
-  // console.log(`extractLoudnessData input`, testBuffer2, segmentDuration);
   const momentary = [];
   const intervals = [];
   const numChannels = testBuffer2.buffer.numberOfChannels;
@@ -145,17 +164,13 @@ const extractLoudnessData = function (testBuffer2, segmentDuration) {
       intervals.push(intervalDuration);
     }
   }
-  // This is where calculate momentary average would theoretically happen.
-
-  // console.log(`extractLoudnessData output`, momentary, intervals);
   return { momentary, intervals };
 };
 
+// Once the values have been pushed through the K-weighting filter and gate, they are calcuated into the intergrated value here
 const calcIntLUFS = function (momentary, intervals) {
   // Calculate integrated loudness
-  // console.log(`calcIntLUFS Input`, momentary, intervals);
   let integratedLoudness = 0;
-  // console.log(`momentary.length`, momentary.length);
   for (let i = 0; i < momentary.length; i++) {
     integratedLoudness += momentary[i] * intervals[i];
 
@@ -164,11 +179,8 @@ const calcIntLUFS = function (momentary, intervals) {
   console.log(`calcIntLUFS step 1`, integratedLoudness);
   // Normalize by total duration
   const totalDuration = intervals.reduce((acc, val) => acc + val, 0);
-  // console.log(`calcIntLUFS Step 2 `, totalDuration);
   integratedLoudness /= totalDuration;
-  // console.log(`calcIntLUFS Step 3`, integratedLoudness);
   integratedLoudness = Math.round(integratedLoudness * 100) / 100;
-  // console.log(`calcIntLUFS Step 4`, integratedLoudness);
   return integratedLoudness;
 };
 
@@ -221,12 +233,23 @@ const makeKWeight = function () {
     destinationBuffer.buffer = renderedBuffer;
   });
 };
-// Event Listener for RMS and LUFS
+// Event Listener for DBFS
+// RMS
 document.getElementById("Calculate RMS").addEventListener("click", function () {
   document.getElementById("RMS Result").innerText = `${calcRMS(
     fileBuffer
   )} DBFS`;
 });
+// Peak
+document
+  .getElementById("Calculate Peak DB")
+  .addEventListener("click", function () {
+    document.getElementById("Peak Result").innerText = `${peakAmp(
+      fileBuffer
+    )} DBFS`;
+  });
+
+// LUFS
 document.getElementById("LUFS Timing").addEventListener("click", function () {
   makeKWeight();
 });

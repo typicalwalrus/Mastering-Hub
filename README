@@ -1,0 +1,3 @@
+SOOO this is the final version of mastering hub
+
+I'm pretty confident with the accuray of the DBFS numbers as there's less to really interpret there. The LUFS calcs are going to vary a little bit from things like Insight and other Metering tools because the weighted filter and the gating aren't as precise as those are, however for shorter audio files where the things the gate's missing don't really stack up all that much, the numbers are still pretty dang close to what's coming out of professional metering tools.

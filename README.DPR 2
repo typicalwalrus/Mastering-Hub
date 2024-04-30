@@ -1,1 +1,0 @@
-This is basically in the same shape it was after our meeting on friday. In all transparency I haven't really gotten to work on it since then, save a few more test runs to try and dial in the LUFS filter a tiny bit more. Going to reimplement the DB Peak loudness function and clean it up a bit, then we'll be good to go!

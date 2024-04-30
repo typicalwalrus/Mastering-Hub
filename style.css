@@ -36,5 +36,24 @@ h3 {
 }
 .button {
   font-size: 18px;
-  padding: 12px 24px;
+  /* padding: 12px 24px; */
+  float: left;
+}
+
+h4 {
+  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande",
+    "Lucida Sans", Arial, sans-serif;
+}
+.leftThird {
+  width: 50%; /* Set width to one-third of the screen */
+  float: left; /* Float the container to the left */
+  margin-top: 5px;
+}
+.resultButton {
+  float: left;
+}
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
 }
